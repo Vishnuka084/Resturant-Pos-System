@@ -5,6 +5,8 @@ import { Order, OrderStatus } from '../types';
 import { playNotificationSound } from '../lib/sound';
 import toast from 'react-hot-toast';
 
+import { MessagingService } from '../services/messagingService';
+
 export const useOrders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,6 +45,15 @@ export const useOrders = () => {
       ));
 
       const docRef = await addDoc(collection(db, 'orders'), sanitizedOrder);
+      
+      // Send message asynchronously so it won't block the user's workflow
+      // Note: we're passing the full order including the ID we just got
+      const finalOrder = { id: docRef.id, ...sanitizedOrder } as Order;
+      MessagingService.sendOrderConfirmation(finalOrder).catch(err => {
+        // Silently log or handle the error, but don't disrupt the placement
+        console.warn('Silent messaging error:', err);
+      });
+
       toast.success('Order placed successfully!');
       return docRef.id;
     } catch (error) {
@@ -55,6 +66,15 @@ export const useOrders = () => {
   const updateOrderStatus = async (id: string, status: OrderStatus) => {
     try {
       await updateDoc(doc(db, 'orders', id), { status });
+      
+      // Notify customer of the status change if applicable
+      const foundOrder = orders.find(o => o.id === id);
+      if (foundOrder) {
+        MessagingService.sendStatusUpdate({ ...foundOrder, status }).catch(err => {
+          console.warn('Status notification error:', err);
+        });
+      }
+
       toast.success(`Order marked as ${status}`);
     } catch (error) {
       console.error(error);
