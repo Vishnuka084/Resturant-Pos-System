@@ -22,7 +22,10 @@ export const AdminDashboard = () => {
     category: '',
     image: '',
     description: '',
-    isAvailable: true
+    isAvailable: true,
+    type: 'food' as 'food' | 'rental' | 'tour' | 'service',
+    duration: '',
+    capacity: ''
   });
 
   const [promoFormData, setPromoFormData] = useState({
@@ -60,7 +63,10 @@ export const AdminDashboard = () => {
       category: item.category,
       image: item.image,
       description: item.description || '',
-      isAvailable: item.isAvailable
+      isAvailable: item.isAvailable,
+      type: item.type || 'food',
+      duration: item.duration || '',
+      capacity: item.capacity?.toString() || ''
     });
     setIsModalOpen(true);
   };
@@ -73,7 +79,10 @@ export const AdminDashboard = () => {
       category: categories[0] || 'Main Course',
       image: '',
       description: '',
-      isAvailable: true
+      isAvailable: true,
+      type: 'food',
+      duration: '',
+      capacity: ''
     });
     setIsModalOpen(true);
   };
@@ -114,13 +123,16 @@ export const AdminDashboard = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const data = {
+    const data: Omit<MenuItem, 'id'> = {
       name: formData.name,
       price: parseFloat(formData.price),
       category: formData.category,
       image: formData.image,
       description: formData.description,
-      isAvailable: formData.isAvailable
+      isAvailable: formData.isAvailable,
+      type: formData.type,
+      duration: formData.duration,
+      capacity: formData.capacity ? parseInt(formData.capacity) : undefined
     };
 
     if (editingItem) {
@@ -143,7 +155,7 @@ export const AdminDashboard = () => {
             onClick={() => setActiveTab('menu')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'menu' ? 'bg-primary-600 text-white shadow-sm' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300'}`}
           >
-            Menu Items
+            Menu & Services
           </button>
           <button
             onClick={() => setActiveTab('orders')}
@@ -176,7 +188,7 @@ export const AdminDashboard = () => {
           <p className="text-3xl font-bold text-gray-900 dark:text-white">{orders.length}</p>
         </div>
         <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800">
-          <h3 className="text-sm font-medium text-gray-500 mb-1">Active Menu Items</h3>
+          <h3 className="text-sm font-medium text-gray-500 mb-1">Active Items/Services</h3>
           <p className="text-3xl font-bold text-gray-900 dark:text-white">{menuItems.filter(i => i.isAvailable).length}</p>
         </div>
       </div>
@@ -184,12 +196,12 @@ export const AdminDashboard = () => {
       {activeTab === 'menu' && (
         <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
           <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
-            <h2 className="text-xl font-bold">Menu Management</h2>
+            <h2 className="text-xl font-bold">Offerings Management</h2>
             <button
               onClick={handleOpenAdd}
               className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2"
             >
-              <Plus className="h-4 w-4" /> Add Item
+              <Plus className="h-4 w-4" /> Add Item/Service
             </button>
           </div>
           <div className="overflow-x-auto">
@@ -197,7 +209,7 @@ export const AdminDashboard = () => {
               <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300">
                 <tr>
                   <th className="px-6 py-4 font-medium">Item</th>
-                  <th className="px-6 py-4 font-medium">Category</th>
+                  <th className="px-6 py-4 font-medium">Category / Type</th>
                   <th className="px-6 py-4 font-medium">Price</th>
                   <th className="px-6 py-4 font-medium">Status</th>
                   <th className="px-6 py-4 font-medium text-right">Actions</th>
@@ -218,8 +230,9 @@ export const AdminDashboard = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
-                        {item.category}
+                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 capitalize">
+                        {item.type || 'food'}
+                        {item.duration && ` • ${item.duration}`}
                       </span>
                     </td>
                     <td className="px-6 py-4 font-medium">${item.price.toFixed(2)}</td>
@@ -338,7 +351,7 @@ export const AdminDashboard = () => {
           </div>
 
           <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800">
-            <h2 className="text-xl font-bold mb-4">Top 5 Best-Selling Dishes</h2>
+            <h2 className="text-xl font-bold mb-4">Top 5 Best-Selling Items/Services</h2>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
@@ -495,6 +508,25 @@ export const AdminDashboard = () => {
               <div>
                 <label className="block text-sm font-medium mb-1">Description</label>
                 <textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full px-3 py-2 border rounded-lg bg-gray-50 dark:bg-gray-800 dark:border-gray-700" rows={3}></textarea>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Item Type</label>
+                  <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value as any})} className="w-full px-3 py-2 border rounded-lg bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
+                    <option value="food">🍽️ Food/Drink</option>
+                    <option value="rental">🚲 Rental</option>
+                    <option value="tour">🌴 Tour</option>
+                    <option value="service">🏄 Service</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Duration (Optional)</label>
+                  <input type="text" value={formData.duration} onChange={e => setFormData({...formData, duration: e.target.value})} placeholder="e.g. 2 hrs/day" className="w-full px-3 py-2 border rounded-lg bg-gray-50 dark:bg-gray-800 dark:border-gray-700" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Capacity / Max People (Optional)</label>
+                <input type="number" value={formData.capacity} onChange={e => setFormData({...formData, capacity: e.target.value})} className="w-full px-3 py-2 border rounded-lg bg-gray-50 dark:bg-gray-800 dark:border-gray-700" />
               </div>
               <div className="flex items-center gap-2 mt-4">
                 <input type="checkbox" id="isAvailable" checked={formData.isAvailable} onChange={e => setFormData({...formData, isAvailable: e.target.checked})} className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />

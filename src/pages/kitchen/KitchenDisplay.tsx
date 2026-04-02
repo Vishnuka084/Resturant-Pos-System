@@ -7,8 +7,12 @@ export const KitchenDisplay = () => {
   const { orders, loading, updateOrderStatus } = useOrders();
 
   const activeOrders = orders.filter(
-    order => order.status === 'pending' || order.status === 'preparing'
-  );
+    order => (order.status === 'pending' || order.status === 'preparing') && 
+             order.items.some(item => item.type === 'food' || !item.type)
+  ).map(order => ({
+    ...order,
+    items: order.items.filter(item => item.type === 'food' || !item.type)
+  }));
 
   const pendingCount = activeOrders.filter(o => o.status === 'pending').length;
   const preparingCount = activeOrders.filter(o => o.status === 'preparing').length;
@@ -38,10 +42,10 @@ export const KitchenDisplay = () => {
         </div>
         <div className="bg-white dark:bg-gray-900 px-6 py-4 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 flex items-center gap-4">
           <div className="p-3 bg-blue-100 text-blue-600 rounded-xl">
-            <ChefHat className="h-6 w-6" />
+            <CheckCircle className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-sm font-medium text-gray-500">Preparing</p>
+            <p className="text-sm font-medium text-gray-500">Preparing / Active</p>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">{preparingCount}</p>
           </div>
         </div>
@@ -84,7 +88,17 @@ export const KitchenDisplay = () => {
                   <div key={idx} className="flex gap-3 pb-4 border-b border-gray-100 dark:border-gray-800 last:border-0">
                     <div className="font-bold text-lg w-6 shrink-0">{item.quantity}x</div>
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900 dark:text-white text-lg leading-tight">{item.name}</p>
+                      <p className="font-medium text-gray-900 dark:text-white text-lg leading-tight flex items-center gap-2">
+                        {item.name}
+                        {item.type && item.type !== 'food' && (
+                          <span className="text-[10px] bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-md font-bold uppercase tracking-tighter">
+                             {item.type}
+                          </span>
+                        )}
+                      </p>
+                      {item.duration && (
+                        <p className="text-xs text-gray-500 mt-1 font-medium">Duration: {item.duration}</p>
+                      )}
                       {item.spiceLevel && (
                         <p className="text-sm text-red-500 font-bold mt-1">Spice: {item.spiceLevel}</p>
                       )}
@@ -106,18 +120,18 @@ export const KitchenDisplay = () => {
               </div>
 
               <div className="p-4 border-t border-gray-100 dark:border-gray-800">
-                <button
+                  <button
                   onClick={() => handleStatusChange(order.id, order.status)}
                   className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
                     order.status === 'pending'
                       ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                      : 'bg-green-500 hover:bg-green-600 text-white'
+                      : 'bg-green-500 hover:bg-green-600 text-white shadow-lg'
                   }`}
                 >
                   {order.status === 'pending' ? (
-                    <><ChefHat className="h-5 w-5" /> Start Preparing</>
+                    <><CheckCircle className="h-5 w-5" /> Accept Order</>
                   ) : (
-                    <><CheckCircle className="h-5 w-5" /> Mark Completed</>
+                    <><CheckCircle className="h-5 w-5" /> Mark Ready / Done</>
                   )}
                 </button>
               </div>

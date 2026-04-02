@@ -5,7 +5,7 @@ import { useOrders } from '../../hooks/useOrders';
 import { useCart } from '../../context/CartContext';
 import { usePromoCodes } from '../../hooks/usePromoCodes';
 import { MenuGrid } from '../../components/menu/MenuGrid';
-import { Minus, Plus, Trash2, ShoppingBag, X, CheckCircle, ChefHat, Clock } from 'lucide-react';
+import { Minus, Plus, Trash2, ShoppingBag, X, CheckCircle, Utensils, Bike, Calendar, Clock, ChefHat } from 'lucide-react';
 import { playNotificationSound } from '../../lib/sound';
 import toast from 'react-hot-toast';
 
@@ -50,14 +50,24 @@ export const QRMenu = () => {
     if (tableFromUrl) {
       setTableNumber(tableFromUrl);
     }
+    const categoryFromUrl = searchParams.get('category');
+    if (categoryFromUrl) {
+      setActiveCategory(categoryFromUrl);
+    }
   }, [searchParams]);
 
-  const categories = Array.from(new Set(menuItems.map(item => item.category)));
   const [activeCategory, setActiveCategory] = useState<string>('All');
+  const [activeSection, setActiveSection] = React.useState<'food' | 'services'>('food');
+
+  const filteredItemsBySection = menuItems.filter(item => 
+    activeSection === 'food' ? (item.type === 'food' || !item.type) : (item.type !== 'food')
+  );
+
+  const categories = Array.from(new Set(filteredItemsBySection.map(item => item.category)));
 
   const filteredItems = activeCategory === 'All' 
-    ? menuItems 
-    : menuItems.filter(item => item.category === activeCategory);
+    ? filteredItemsBySection 
+    : filteredItemsBySection.filter(item => item.category === activeCategory);
 
   const handlePromoCode = (code: string) => {
     setPromoCodeInput(code);
@@ -198,10 +208,35 @@ export const QRMenu = () => {
   return (
     <div className="relative min-h-[calc(100vh-6rem)] pb-24">
       {/* Header Info */}
-      <div className="mb-6 space-y-2">
-        <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">Our Menu</h1>
-        <p className="text-gray-500">
-          {tableNumber ? `Ordering for Table ${tableNumber}` : 'Order directly from your table'}
+      <div className="mb-6 space-y-4">
+        <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">Our Services</h1>
+        
+        {/* Section Switcher */}
+        <div className="flex p-1 bg-gray-200 dark:bg-gray-800 rounded-2xl w-full md:w-fit">
+          <button
+            onClick={() => { setActiveSection('food'); setActiveCategory('All'); }}
+            className={`flex-1 md:flex-none px-6 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
+              activeSection === 'food' 
+                ? 'bg-white dark:bg-gray-900 text-primary-600 shadow-sm' 
+                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+          >
+            <Utensils className="h-5 w-5" /> Restaurant
+          </button>
+          <button
+            onClick={() => { setActiveSection('services'); setActiveCategory('All'); }}
+            className={`flex-1 md:flex-none px-6 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
+              activeSection === 'services' 
+                ? 'bg-white dark:bg-gray-900 text-primary-600 shadow-sm' 
+                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+          >
+            <Bike className="h-5 w-5" /> Rentals & Tours
+          </button>
+        </div>
+
+        <p className="text-gray-500 font-medium">
+          {tableNumber ? `Ordering for Table ${tableNumber}` : 'Browse and book directly'}
         </p>
       </div>
 
@@ -278,6 +313,24 @@ export const QRMenu = () => {
                       <h4 className="font-bold text-sm text-gray-900 dark:text-white line-clamp-1">{item.name}</h4>
                       <span className="font-bold text-sm ml-2">${((item.price + (item.selectedAddons?.reduce((s, a) => s + a.price, 0) || 0)) * item.quantity).toFixed(2)}</span>
                     </div>
+                    <div className="flex gap-1 flex-wrap my-0.5">
+                      {item.type && item.type !== 'food' && (
+                        <span className="text-[10px] bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded-md font-bold uppercase tracking-tighter">
+                          {item.type}
+                        </span>
+                      )}
+                      {item.duration && (
+                        <span className="text-[10px] bg-gray-100 dark:bg-gray-800 text-gray-500 px-1.5 py-0.5 rounded-md font-medium">
+                          {item.duration}
+                        </span>
+                      )}
+                    </div>
+                    {(item.selectedDate || item.selectedSlot) && (
+                      <div className="flex gap-2 items-center text-[10px] text-primary-600 dark:text-primary-400 font-bold mb-1">
+                        {item.selectedDate && <span className="flex items-center gap-1">📅 {item.selectedDate}</span>}
+                        {item.selectedSlot && <span className="flex items-center gap-1">🕒 {item.selectedSlot}</span>}
+                      </div>
+                    )}
                     {item.spiceLevel && <p className="text-xs text-red-500 font-medium my-0.5">Spice: {item.spiceLevel}</p>}
                     {item.selectedAddons && item.selectedAddons.length > 0 && (
                       <p className="text-xs text-gray-500 my-0.5">{item.selectedAddons.map(a => a.name).join(', ')}</p>

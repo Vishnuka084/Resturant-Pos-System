@@ -3,7 +3,7 @@ import { useMenuItems } from '../../hooks/useMenuItems';
 import { useOrders } from '../../hooks/useOrders';
 import { useCart } from '../../context/CartContext';
 import { MenuGrid } from '../../components/menu/MenuGrid';
-import { Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
+import { Minus, Plus, Trash2, ShoppingBag, Utensils, Bike } from 'lucide-react';
 import { PaymentModal } from '../../components/pos/PaymentModal';
 
 export const POSPage = () => {
@@ -13,13 +13,18 @@ export const POSPage = () => {
   const [isPlacing, setIsPlacing] = React.useState(false);
 
   const [isPaymentModalOpen, setIsPaymentModalOpen] = React.useState(false);
+  const [activeSection, setActiveSection] = React.useState<'food' | 'services'>('food');
 
-  const categories = Array.from(new Set(menuItems.map(item => item.category)));
+  const filteredItemsBySection = menuItems.filter(item => 
+    activeSection === 'food' ? (item.type === 'food' || !item.type) : (item.type !== 'food')
+  );
+
+  const categories = Array.from(new Set(filteredItemsBySection.map(item => item.category)));
   const [activeCategory, setActiveCategory] = React.useState<string>('All');
 
   const filteredItems = activeCategory === 'All' 
-    ? menuItems 
-    : menuItems.filter(item => item.category === activeCategory);
+    ? filteredItemsBySection 
+    : filteredItemsBySection.filter(item => item.category === activeCategory);
 
   const handleCheckoutClick = () => {
     if (cart.length === 0) return;
@@ -51,13 +56,37 @@ export const POSPage = () => {
     <div className="flex h-[calc(100vh-6rem)] gap-6">
       {/* Menu Section */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Section Switcher */}
+        <div className="flex p-1 bg-gray-200 dark:bg-gray-800 rounded-2xl mb-4 w-fit">
+          <button
+            onClick={() => { setActiveSection('food'); setActiveCategory('All'); }}
+            className={`px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all ${
+              activeSection === 'food' 
+                ? 'bg-white dark:bg-gray-900 text-primary-600 shadow-sm' 
+                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+          >
+            <Utensils className="h-5 w-5" /> Restaurant
+          </button>
+          <button
+            onClick={() => { setActiveSection('services'); setActiveCategory('All'); }}
+            className={`px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all ${
+              activeSection === 'services' 
+                ? 'bg-white dark:bg-gray-900 text-primary-600 shadow-sm' 
+                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+          >
+            <Bike className="h-5 w-5" /> Services/Rentals
+          </button>
+        </div>
+
         {/* Categories */}
         <div className="flex gap-2 overflow-x-auto pb-4 mb-4 scrollbar-hide">
           <button
             onClick={() => setActiveCategory('All')}
             className={`px-6 py-2 rounded-full font-medium whitespace-nowrap transition-colors ${
               activeCategory === 'All' 
-                ? 'bg-primary-600 text-white' 
+                ? 'bg-primary-600 text-white shadow-md' 
                 : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
             }`}
           >
@@ -111,6 +140,24 @@ export const POSPage = () => {
                     <h4 className="font-bold text-sm text-gray-900 dark:text-white line-clamp-1">{item.name}</h4>
                     <span className="font-bold text-sm ml-2">${((item.price + (item.selectedAddons?.reduce((s, a) => s + a.price, 0) || 0)) * item.quantity).toFixed(2)}</span>
                   </div>
+                  <div className="flex gap-1 flex-wrap my-0.5">
+                    {item.type && item.type !== 'food' && (
+                      <span className="text-[10px] bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded-md font-bold uppercase tracking-tighter">
+                        {item.type}
+                      </span>
+                    )}
+                    {item.duration && (
+                      <span className="text-[10px] bg-gray-100 dark:bg-gray-800 text-gray-500 px-1.5 py-0.5 rounded-md font-medium">
+                        {item.duration}
+                      </span>
+                    )}
+                  </div>
+                  {(item.selectedDate || item.selectedSlot) && (
+                    <div className="flex gap-2 items-center text-[10px] text-primary-600 dark:text-primary-400 font-bold mb-1">
+                      {item.selectedDate && <span className="flex items-center gap-1">📅 {item.selectedDate}</span>}
+                      {item.selectedSlot && <span className="flex items-center gap-1">🕒 {item.selectedSlot}</span>}
+                    </div>
+                  )}
                   {item.spiceLevel && <p className="text-xs text-red-500 font-medium my-0.5">Spice: {item.spiceLevel}</p>}
                   {item.selectedAddons && item.selectedAddons.length > 0 && (
                     <p className="text-xs text-gray-500 my-0.5">{item.selectedAddons.map(a => a.name).join(', ')}</p>

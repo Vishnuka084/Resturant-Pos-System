@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LogOut, LayoutDashboard, ShoppingCart, ChefHat, Utensils } from 'lucide-react';
+import { LogOut, LayoutDashboard, ShoppingCart, ChefHat, Utensils, Calendar } from 'lucide-react';
 
 export const Navbar = () => {
   const { user, logout } = useAuth();
@@ -29,12 +29,20 @@ export const Navbar = () => {
             {user && (
               <div className="hidden sm:ml-8 sm:flex sm:space-x-4">
                 {(user.role === 'admin' || user.role === 'cashier') && (
-                  <Link
-                    to="/pos"
-                    className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2"
-                  >
-                    <ShoppingCart className="h-4 w-4" /> POS
-                  </Link>
+                  <>
+                    <Link
+                      to="/pos"
+                      className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2"
+                    >
+                      <ShoppingCart className="h-4 w-4" /> POS
+                    </Link>
+                    <Link
+                      to="/bookings"
+                      className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2"
+                    >
+                      <Calendar className="h-4 w-4" /> Bookings
+                    </Link>
+                  </>
                 )}
                 {(user.role === 'admin' || user.role === 'kitchen') && (
                   <Link

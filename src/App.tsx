@@ -12,6 +12,7 @@ import { POSPage } from './pages/pos/POSPage';
 import { KitchenDisplay } from './pages/kitchen/KitchenDisplay';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { QRMenu } from './pages/customer/QRMenu';
+import { BookingsCalendar } from './pages/admin/BookingsCalendar';
 
 function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) {
   const { user, loading } = useAuth();
@@ -48,10 +49,16 @@ function App() {
               } />
               
               <Route path="admin" element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } />
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="bookings" element={
+                  <ProtectedRoute allowedRoles={['admin', 'cashier']}>
+                    <BookingsCalendar />
+                  </ProtectedRoute>
+                } />
             </Route>
           </Routes>
         </BrowserRouter>

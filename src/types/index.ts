@@ -7,6 +7,8 @@ export interface User {
   name: string;
 }
 
+export type ItemType = 'food' | 'rental' | 'tour' | 'service';
+
 export interface MenuItem {
   id: string;
   name: string;
@@ -15,6 +17,10 @@ export interface MenuItem {
   image: string;
   isAvailable: boolean;
   description?: string;
+  type: ItemType;
+  duration?: string;
+  capacity?: number;
+  slots?: string[];
 }
 
 export type OrderStatus = 'pending' | 'preparing' | 'completed' | 'cancelled';
@@ -25,6 +31,8 @@ export interface CartItem extends MenuItem {
   specialInstructions?: string;
   spiceLevel?: string;
   selectedAddons?: { name: string; price: number }[];
+  selectedSlot?: string;
+  selectedDate?: string;
 }
 
 export interface Order {
