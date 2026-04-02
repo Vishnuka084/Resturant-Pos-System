@@ -52,6 +52,7 @@ src/
 npm install
 ```
 
+``----------------------``
 ### 2. Firebase Configuration
 1. Go to the [Firebase Console](https://console.firebase.google.com/).
 2. Create a new project and add a Web Application.
