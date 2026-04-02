@@ -2,6 +2,7 @@ import React from 'react';
 import { MenuItem } from '../../types';
 import { useCart } from '../../context/CartContext';
 import { Plus } from 'lucide-react';
+import { ItemCustomizationModal } from './ItemCustomizationModal';
 
 interface MenuGridProps {
   items: MenuItem[];
@@ -10,6 +11,7 @@ interface MenuGridProps {
 
 export const MenuGrid: React.FC<MenuGridProps> = ({ items, loading }) => {
   const { addToCart } = useCart();
+  const [selectedItem, setSelectedItem] = React.useState<MenuItem | null>(null);
 
   if (loading) {
     return <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-pulse">
@@ -41,7 +43,7 @@ export const MenuGrid: React.FC<MenuGridProps> = ({ items, loading }) => {
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 line-clamp-2 flex-1">{item.description}</p>
             <button
-              onClick={() => addToCart(item)}
+              onClick={() => setSelectedItem(item)}
               className="w-full flex items-center justify-center gap-2 bg-primary-50 hover:bg-primary-100 text-primary-700 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-primary-400 font-medium py-2 rounded-xl transition-colors"
             >
               <Plus className="h-4 w-4" /> Add to Order
@@ -49,6 +51,13 @@ export const MenuGrid: React.FC<MenuGridProps> = ({ items, loading }) => {
           </div>
         </div>
       ))}
+      
+      <ItemCustomizationModal
+        isOpen={!!selectedItem}
+        item={selectedItem}
+        onClose={() => setSelectedItem(null)}
+        onAddToCart={addToCart}
+      />
     </div>
   );
 };

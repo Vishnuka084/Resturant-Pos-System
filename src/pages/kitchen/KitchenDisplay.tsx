@@ -79,14 +79,26 @@ export const KitchenDisplay = () => {
                 </div>
               </div>
 
-              <div className="p-4 flex-1 overflow-y-auto space-y-3">
+              <div className="p-4 flex-1 overflow-y-auto space-y-4">
                 {order.items.map((item, idx) => (
-                  <div key={idx} className="flex gap-3 pb-3 border-b border-gray-100 dark:border-gray-800 last:border-0">
+                  <div key={idx} className="flex gap-3 pb-4 border-b border-gray-100 dark:border-gray-800 last:border-0">
                     <div className="font-bold text-lg w-6 shrink-0">{item.quantity}x</div>
-                    <div>
-                      <p className="font-medium text-gray-900 dark:text-white">{item.name}</p>
-                      {item.description && (
-                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">{item.description}</p>
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900 dark:text-white text-lg leading-tight">{item.name}</p>
+                      {item.spiceLevel && (
+                        <p className="text-sm text-red-500 font-bold mt-1">Spice: {item.spiceLevel}</p>
+                      )}
+                      {item.selectedAddons && item.selectedAddons.length > 0 && (
+                        <p className="text-sm text-gray-600 dark:text-gray-400 font-medium mt-1">
+                          + {item.selectedAddons.map(a => a.name).join(', ')}
+                        </p>
+                      )}
+                      {item.specialInstructions && (
+                        <div className="mt-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800/50 p-2 rounded-lg">
+                          <p className="text-sm text-yellow-800 dark:text-yellow-500 font-medium italic">
+                            "{item.specialInstructions}"
+                          </p>
+                        </div>
                       )}
                     </div>
                   </div>

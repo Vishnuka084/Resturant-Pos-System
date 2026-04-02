@@ -20,7 +20,11 @@ export interface MenuItem {
 export type OrderStatus = 'pending' | 'preparing' | 'completed' | 'cancelled';
 
 export interface CartItem extends MenuItem {
+  cartItemId: string; // Unique ID for cart instance
   quantity: number;
+  specialInstructions?: string;
+  spiceLevel?: string;
+  selectedAddons?: { name: string; price: number }[];
 }
 
 export interface Order {
@@ -34,4 +38,16 @@ export interface Order {
   phoneNumber?: string;
   paymentStatus?: 'pending' | 'paid';
   paymentMethod?: 'cash' | 'card';
+  tipAmount?: number;
+  discountAmount?: number;
+  promoCode?: string;
+}
+
+export interface PromoCode {
+  id: string;
+  code: string;
+  type: 'percentage' | 'fixed';
+  value: number;
+  isActive: boolean;
+  expiryDate?: number;
 }

@@ -37,11 +37,17 @@ export const useOrders = () => {
 
   const placeOrder = async (order: Omit<Order, 'id'>) => {
     try {
-      await addDoc(collection(db, 'orders'), order);
+      // Sanitize the order object to remove any undefined fields that Firestore might reject
+      const sanitizedOrder = JSON.parse(JSON.stringify(order, (key, value) => 
+        value === undefined ? null : value
+      ));
+
+      const docRef = await addDoc(collection(db, 'orders'), sanitizedOrder);
       toast.success('Order placed successfully!');
+      return docRef.id;
     } catch (error) {
-      console.error(error);
-      toast.error('Failed to place order.');
+      console.error('Firestore Place Order Error:', error);
+      toast.error('Failed to place order. Check your internet or Firebase rules.');
       throw error;
     }
   };

@@ -26,17 +26,19 @@ export const POSPage = () => {
     setIsPaymentModalOpen(true);
   };
 
-  const processOrder = async (method: 'cash' | 'card') => {
+  const processOrder = async (details: { method: 'cash' | 'card', discountAmount: number, tipAmount: number, promoCode?: string }) => {
     setIsPlacing(true);
     try {
       await placeOrder({
         items: cart,
-        total,
-        status: 'completed', // Walk-in is auto-completed or can be 'preparing'
+        total: total - details.discountAmount + ((total - details.discountAmount) * 0.08) + details.tipAmount,
+        status: 'completed',
         createdAt: Date.now(),
-        customerName: 'Walk-in Customer',
         paymentStatus: 'paid',
-        paymentMethod: method
+        paymentMethod: details.method,
+        discountAmount: details.discountAmount,
+        tipAmount: details.tipAmount,
+        promoCode: details.promoCode
       });
       clearCart();
       setIsPaymentModalOpen(false);
@@ -98,28 +100,35 @@ export const POSPage = () => {
             </div>
           ) : (
             cart.map(item => (
-              <div key={item.id} className="flex gap-3 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-xl">
+              <div key={item.cartItemId} className="flex gap-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 p-3 rounded-xl shadow-sm">
                 {item.image ? (
-                   <img src={item.image} alt={item.name} className="h-16 w-16 object-cover rounded-lg" />
+                  <img src={item.image} alt={item.name} className="h-16 w-16 object-cover rounded-lg shrink-0" />
                 ) : (
-                   <div className="h-16 w-16 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center text-xs text-gray-500">Img</div>
+                  <div className="h-16 w-16 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center text-xs text-gray-500 shrink-0">Img</div>
                 )}
                 <div className="flex-1 flex flex-col justify-between">
                   <div className="flex justify-between">
-                    <h4 className="font-medium text-sm text-gray-900 dark:text-white line-clamp-1">{item.name}</h4>
-                    <span className="font-bold text-sm ml-2">${(item.price * item.quantity).toFixed(2)}</span>
+                    <h4 className="font-bold text-sm text-gray-900 dark:text-white line-clamp-1">{item.name}</h4>
+                    <span className="font-bold text-sm ml-2">${((item.price + (item.selectedAddons?.reduce((s, a) => s + a.price, 0) || 0)) * item.quantity).toFixed(2)}</span>
                   </div>
+                  {item.spiceLevel && <p className="text-xs text-red-500 font-medium my-0.5">Spice: {item.spiceLevel}</p>}
+                  {item.selectedAddons && item.selectedAddons.length > 0 && (
+                    <p className="text-xs text-gray-500 my-0.5">{item.selectedAddons.map(a => a.name).join(', ')}</p>
+                  )}
+                  {item.specialInstructions && (
+                    <p className="text-xs text-gray-500 italic my-0.5 whitespace-pre-wrap">"{item.specialInstructions}"</p>
+                  )}
                   <div className="flex items-center justify-between mt-2">
-                    <div className="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-1">
-                      <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="text-gray-500 hover:text-gray-700 p-1">
+                    <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-900 rounded-lg p-1">
+                      <button onClick={() => updateQuantity(item.cartItemId, item.quantity - 1)} className="p-1">
                         <Minus className="h-3 w-3" />
                       </button>
                       <span className="text-sm font-medium w-4 text-center">{item.quantity}</span>
-                      <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="text-gray-500 hover:text-gray-700 p-1">
+                      <button onClick={() => updateQuantity(item.cartItemId, item.quantity + 1)} className="p-1">
                         <Plus className="h-3 w-3" />
                       </button>
                     </div>
-                    <button onClick={() => removeFromCart(item.id)} className="text-red-500 hover:text-red-600 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                    <button onClick={() => removeFromCart(item.cartItemId)} className="text-red-500 p-2">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>

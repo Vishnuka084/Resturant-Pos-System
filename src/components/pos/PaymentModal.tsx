@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { X, Printer, CreditCard, Banknote as Cash } from 'lucide-react';
 import { CartItem } from '../../types';
+import { usePromoCodes } from '../../hooks/usePromoCodes';
+import toast from 'react-hot-toast';
 
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onComplete: (paymentMethod: 'cash' | 'card') => void;
+  onComplete: (details: { method: 'cash' | 'card', discountAmount: number, tipAmount: number, promoCode?: string }) => void;
   total: number;
   items: CartItem[];
   orderId?: string;
@@ -14,16 +16,49 @@ interface PaymentModalProps {
 export const PaymentModal: React.FC<PaymentModalProps> = ({ 
   isOpen, onClose, onComplete, total, items, orderId 
 }) => {
+  const { promoCodes } = usePromoCodes();
   const [method, setMethod] = useState<'cash' | 'card'>('cash');
   const [amountGiven, setAmountGiven] = useState('');
   
-  const totalWithTax = total * 1.08;
-  const change = method === 'cash' && amountGiven ? parseFloat(amountGiven) - totalWithTax : 0;
+  const [promoCodeInput, setPromoCodeInput] = useState('');
+  const [activePromo, setActivePromo] = useState<any>(null);
+  const [discountAmt, setDiscountAmt] = useState(0);
+  const [tipPercent, setTipPercent] = useState(0);
+
+  const handlePromoCode = (code: string) => {
+    setPromoCodeInput(code);
+    const foundPromo = promoCodes.find(p => p.code.toUpperCase() === code.toUpperCase() && p.isActive);
+    
+    if (foundPromo) {
+      setActivePromo(foundPromo);
+      let calculatedDiscount = 0;
+      if (foundPromo.type === 'percentage') {
+        calculatedDiscount = total * (foundPromo.value / 100);
+      } else {
+        calculatedDiscount = foundPromo.value;
+      }
+      setDiscountAmt(calculatedDiscount);
+      toast.success(`'${foundPromo.code}' Applied!`);
+    } else {
+      setActivePromo(null);
+      setDiscountAmt(0);
+      if (code) toast.error('Invalid or inactive promo code');
+    }
+  };
+
+  const calculatedTip = total * (tipPercent / 100);
+  const finalTotal = (total - discountAmt) + calculatedTip;
+
+  const change = method === 'cash' && amountGiven ? parseFloat(amountGiven) - finalTotal : 0;
 
   useEffect(() => {
     if (isOpen) {
       setMethod('cash');
       setAmountGiven('');
+      setPromoCodeInput('');
+      setActivePromo(null);
+      setDiscountAmt(0);
+      setTipPercent(0);
     }
   }, [isOpen]);
 
@@ -49,10 +84,10 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         <div className="p-6">
           <div className="text-center mb-6">
             <p className="text-sm text-gray-500 mb-1">Total Amount Due</p>
-            <p className="text-4xl font-bold text-gray-900 dark:text-white">${totalWithTax.toFixed(2)}</p>
+            <p className="text-4xl font-bold text-gray-900 dark:text-white">${finalTotal.toFixed(2)}</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-2 gap-4 mb-4">
             <button
               onClick={() => setMethod('cash')}
               className={`flex flex-col items-center p-4 rounded-xl border-2 transition-colors ${
@@ -61,7 +96,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 : 'border-gray-200 dark:border-gray-800 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
               }`}
             >
-              <div className="h-8 w-8 mb-2 flex items-center justify-center">$</div>
+              <div className="h-8 w-8 mb-2 flex items-center justify-center text-xl font-bold">$</div>
               <span className="font-medium">Cash</span>
             </button>
             <button
@@ -75,6 +110,37 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               <CreditCard className="h-8 w-8 mb-2" />
               <span className="font-medium">Card</span>
             </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Promo Code</label>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  value={promoCodeInput}
+                  onChange={e => setPromoCodeInput(e.target.value)}
+                  placeholder="CODE" 
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800"
+                />
+                <button type="button" onClick={() => handlePromoCode(promoCodeInput)} className="px-3 bg-gray-200 dark:bg-gray-800 rounded-lg text-sm font-medium hover:bg-gray-300">Apply</button>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Tip</label>
+              <div className="grid grid-cols-4 gap-1">
+                {[0, 10, 15, 20].map(tip => (
+                  <button
+                    key={tip}
+                    type="button"
+                    onClick={() => setTipPercent(tip)}
+                    className={`py-2 text-xs rounded-lg border-2 transition-colors ${tipPercent === tip ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+                  >
+                    {tip}%
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           {method === 'cash' && (
@@ -110,8 +176,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               <Printer className="h-5 w-5" />
             </button>
             <button
-              onClick={() => onComplete(method)}
-              disabled={method === 'cash' && (!amountGiven || parseFloat(amountGiven) < totalWithTax)}
+              onClick={() => onComplete({ method, discountAmount: discountAmt, tipAmount: calculatedTip, promoCode: activePromo?.code })}
+              disabled={method === 'cash' && (!amountGiven || parseFloat(amountGiven) < finalTotal)}
               className="flex-1 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 dark:disabled:bg-gray-800 text-white font-bold py-3 rounded-xl transition-colors shadow-sm"
             >
               Process & Complete
@@ -129,8 +195,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         </div>
         
         <div className="border-b border-dashed border-black pb-4 mb-4">
-          <p>Order ID: {orderId || 'PENDING'}</p>
+          <p>Order ID: {orderId || 'NEW'}</p>
           <p>Date: {new Date().toLocaleString()}</p>
+          <p>Cashier: Walk-in / Main Register</p>
         </div>
 
         <table className="w-full mb-4">
@@ -142,20 +209,41 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             </tr>
           </thead>
           <tbody>
-            {items.map(item => (
-              <tr key={item.id}>
-                <td className="py-1">{item.quantity}</td>
-                <td className="py-1">{item.name}</td>
-                <td className="py-1 text-right">${(item.price * item.quantity).toFixed(2)}</td>
-              </tr>
-            ))}
+            {items.map(item => {
+              const addonsPrice = item.selectedAddons?.reduce((s, a) => s + a.price, 0) || 0;
+              const itemTotalPrice = item.price + addonsPrice;
+              
+              return (
+                <tr key={item.cartItemId}>
+                  <td className="py-2 align-top">{item.quantity}</td>
+                  <td className="py-2 align-top">
+                    <div>{item.name}</div>
+                    {item.spiceLevel && <div className="text-xs text-gray-500">Spice: {item.spiceLevel}</div>}
+                    {item.selectedAddons && item.selectedAddons.length > 0 && <div className="text-xs text-gray-500">{item.selectedAddons.map(a => a.name).join(', ')}</div>}
+                    {item.specialInstructions && <div className="text-xs italic text-gray-500">"{item.specialInstructions}"</div>}
+                  </td>
+                  <td className="py-2 align-top text-right">${(itemTotalPrice * item.quantity).toFixed(2)}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
 
         <div className="border-t border-dashed border-black pt-4 mb-6 space-y-1 text-right">
           <p>Subtotal: ${total.toFixed(2)}</p>
-          <p>Tax (8%): ${(total * 0.08).toFixed(2)}</p>
-          <p className="font-bold text-lg mt-2">Total: ${totalWithTax.toFixed(2)}</p>
+          {discountAmt > 0 && <p>Discount ({activePromo?.code}): -${discountAmt.toFixed(2)}</p>}
+          {calculatedTip > 0 && <p>Tip: ${(calculatedTip).toFixed(2)}</p>}
+          <p className="font-bold text-lg mt-2">Total: ${finalTotal.toFixed(2)}</p>
+          
+          <div className="mt-4 text-xs">
+            <p>Payment Method: {method.toUpperCase()}</p>
+            {method === 'cash' && amountGiven && (
+              <>
+                <p>Tendered: ${parseFloat(amountGiven).toFixed(2)}</p>
+                <p>Change: ${change.toFixed(2)}</p>
+              </>
+            )}
+          </div>
         </div>
         
         <div className="text-center border-t border-dashed border-black pt-6">
